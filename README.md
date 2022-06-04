@@ -1,4 +1,6 @@
-# relationaltasks
+# On Neural Architecture Inductive Biases for Relational Tasks
+
+This is th code for "On Neural Architecture Inductive Biases for Relational Tasks" as well as for https://openreview.net/forum?id=BSgxIBuI5lq: 
 
 In the cognitive_tests folder, you can find a series of relational psychophysics tasks taken from https://arxiv.org/abs/2012.14601 (testing for OoD on unseen objects) as well as additional harder variations (not only testing for OoD on unseen objects but also on unseen relations) we have created.
 
