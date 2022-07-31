@@ -57,6 +57,7 @@ class GCN_module(nn.Module):
 		self.dropout = dropout
 
 	def forward(self, x, adj):
+		print("inside GCN", x.size(), adj.size())
 		x = F.relu(self.gc1(x, adj))
 		x = F.dropout(x, self.dropout, training=self.training)
 		x = self.gc2(x, adj)
@@ -152,7 +153,8 @@ class Model(nn.Module):
 			for seg in range(len(self.task_seg)):
 				z_seq_all_seg.append(self.apply_context_norm(s_seq[:,self.task_seg[seg],:]))
 			s_seq = torch.cat(z_seq_all_seg, dim=1)
-		adj_matrix = np.ones((self.task_dim, self.task_dim))
+		adj_matrix = torch.Tensor(np.ones((self.task_dim, self.task_dim), dtype= int)).repeat(s_seq.size()[0],1,1)
+		print(s_seq.size()[0], adj_matrix.size())
 		result = self.gcn(s_seq, adj_matrix)
 		print(result)
 		exit()
