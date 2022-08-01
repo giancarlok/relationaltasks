@@ -57,7 +57,6 @@ class GCN_module(nn.Module):
 		self.dropout = dropout
 
 	def forward(self, x, adj):
-		print("inside GCN", x.size(), adj.size())
 		x = F.relu(self.gc1(x, adj))
 		x = F.dropout(x, self.dropout, training=self.training)
 		x = self.gc2(x, adj)
@@ -76,7 +75,6 @@ class Model(nn.Module):
 		self.normalized = args.normalized
 		self.key_dim = args.key_dim
 		self.nheads = args.heads
-		self.gcn = GCN_module(10,128,5,0.5)
 		self.query_dim = args.query_dim
 		self.value_dim = args.value_dim
 		self.pos_dim = args.pos_dim
@@ -94,7 +92,7 @@ class Model(nn.Module):
 		# self.hardcoded = args.hardcoded
 		self.task = args.task
 		self.task_dim = task_gen.seq_len
-
+		self.gcn = GCN_module(128, 128, self.task_dim, 0.5)
 
 		self.detached = args.detached
 		self.selfattention = args.selfattention
@@ -153,15 +151,18 @@ class Model(nn.Module):
 			for seg in range(len(self.task_seg)):
 				z_seq_all_seg.append(self.apply_context_norm(s_seq[:,self.task_seg[seg],:]))
 			s_seq = torch.cat(z_seq_all_seg, dim=1)
-		adj_matrix = torch.Tensor(np.ones((self.task_dim, self.task_dim), dtype= int)).repeat(s_seq.size()[0],1,1)
-		print(s_seq.size()[0], adj_matrix.size())
-		result = self.gcn(s_seq, adj_matrix)
-		print(result)
-		exit()
+		adj_matrix = torch.Tensor(np.ones((self.task_dim, self.task_dim), dtype=int))
+		results = []
+		linear_results = torch.empty(0,self.task_dim).to(device)
+		for i in range(s_seq.shape[0]):
+			result = self.gcn(s_seq[i].to(device), adj_matrix.to(device))[0]
+			results.append(result.argmax(0))
+			linear_results = torch.cat([linear_results, result[None,:]], dim=0)
 
-		y_pred_linear = self.final(R_s)
-		y_pred = y_pred_linear.argmax(1)
-		return y_pred_linear, y_pred, R_save
+		y_pred = torch.Tensor(results).to(device)
+		y_pred_linear = linear_results.to(device)
+
+		return y_pred_linear, y_pred, None
 	def apply_context_norm(self, z_seq):
 		eps = 1e-8
 		z_mu = z_seq.mean(1)
